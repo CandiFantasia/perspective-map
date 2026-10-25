@@ -35,11 +35,11 @@ The tool itself contains no domain knowledge and no one's personal values. It on
 
 ### Option 1: online
 
-Open the project's web address (once GitHub Pages is enabled: `https://candifantasia.github.io/perspective-map/`). Nothing to install.
+Open the project's web address https://candifantasia.github.io/perspective-map/. Nothing to install.
 
 ### Option 2: locally
 
-Download `perspective-map v0.1.0.html` and open it in a browser.
+Download perspective-map v0.1.0.html and open it in a browser.
 
 ### Language
 
