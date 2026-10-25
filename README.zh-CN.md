@@ -35,7 +35,7 @@
 
 ### 方式一：在线使用
 
-打开项目的网页地址（启用 GitHub Pages 后为 `https://<用户名>.github.io/perspective-map/`），无需安装。
+打开项目的网页地址（启用 GitHub Pages 后为 `https://candifantasia.github.io/perspective-map/`），无需安装。
 
 ### 方式二：本地使用
 
