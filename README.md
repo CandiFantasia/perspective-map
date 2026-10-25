@@ -35,7 +35,7 @@ The tool itself contains no domain knowledge and no one's personal values. It on
 
 ### Option 1: online
 
-Open the project's web address (once GitHub Pages is enabled: `https://<CandiFantasia>.github.io/perspective-map/`). Nothing to install.
+Open the project's web address (once GitHub Pages is enabled: `https://<username>.github.io/perspective-map/`). Nothing to install.
 
 ### Option 2: locally
 
