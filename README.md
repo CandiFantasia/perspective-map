@@ -39,7 +39,7 @@ Open the project's web address (once GitHub Pages is enabled: `https://<username
 
 ### Option 2: locally
 
-Download `index.html` and open it in a browser.
+Download `perspective-map v0.1.0.html` and open it in a browser.
 
 ### Language
 
