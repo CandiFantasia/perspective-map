@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Perspective Map: lay out all sides of a situation before you ask an AI. An open-source thinking framework.">
+<meta name="author" content="Fantasia Skadi Candy">
+<title>Perspective Map</title>
+<style>
+/* Layout: a worksheet — the event and choices on the left, the assembled prompt / answer on the right; one column on phones. */
+:root {
+  --bg: #f1f3f6;
+  --panel: #ffffff;
+  --ink: #1b2230;
+  --muted: #5a6476;
+  --line: #d4dae4;
+  --accent: #245b8f;
+  --accent-soft: #e3edf7;
+  --warn: #8a5a00;
+  --display: "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", "SimSun", serif;
+  --body: "Noto Sans SC", "Noto Sans CJK SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #12161d; --panel: #1a2029; --ink: #e6eaf0; --muted: #9aa5b6; --line: #2d3644; --accent: #8fbbe8; --accent-soft: #1f2d3d; --warn: #e8b85c; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #12161d; --panel: #1a2029; --ink: #e6eaf0; --muted: #9aa5b6; --line: #2d3644; --accent: #8fbbe8; --accent-soft: #1f2d3d; --warn: #e8b85c; color-scheme: dark; }
+[hidden] { display: none !important; }
+html, body { background: var(--bg); color: var(--ink); }
+body { font-family: var(--body); font-size: 15px; line-height: 1.7; }
+.wrap {
+  max-width: 1120px; margin: 0 auto; display: grid; gap: 20px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 48px;
+}
+header { display: grid; gap: 4px; max-width: 70ch; }
+.eyebrow { margin: 0; font-size: 12px; letter-spacing: .12em; color: var(--accent); }
+h1 { margin: 0; font-family: var(--display); font-weight: 600; font-size: clamp(26px, 3.4vw, 34px); letter-spacing: .04em; }
+.lede { margin: 0; color: var(--muted); }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.col { display: grid; gap: 16px; min-width: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 12px; min-width: 0; }
+h2 { margin: 0; font-size: 15px; font-weight: 700; display: flex; gap: 8px; align-items: baseline; }
+h2 .n { color: var(--accent); font-variant-numeric: tabular-nums; }
+.note { margin: 0; color: var(--muted); font-size: 13px; }
+textarea, input[type=text], input[type=password], select {
+  width: 100%; box-sizing: border-box; font: inherit; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px;
+}
+textarea { min-height: 96px; resize: vertical; }
+textarea.out { min-height: 300px; font-family: var(--mono); font-size: 13px; line-height: 1.6; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { position: relative; }
+.chip input { position: absolute; opacity: 0; pointer-events: none; }
+.chip span { display: inline-block; border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px; font-size: 13px; cursor: pointer; background: var(--bg); }
+.chip input:checked + span { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+.chip input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.steps { display: grid; gap: 6px; }
+.step { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; font-size: 14px; }
+.step input { margin-top: 5px; accent-color: var(--accent); }
+.step small { display: block; color: var(--muted); font-size: 12.5px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.row > * { min-width: 0; }
+.field { display: grid; gap: 4px; flex: 1 1 180px; }
+.field label { font-size: 13px; color: var(--muted); }
+button { font: inherit; cursor: pointer; border-radius: 8px; padding: 8px 16px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); font-weight: 500; }
+button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+.tabs button { border: none; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 6px 12px; color: var(--muted); }
+.tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+.answer { white-space: pre-wrap; overflow-wrap: anywhere; min-height: 200px; font-size: 14.5px; }
+.status { font-size: 13px; color: var(--muted); }
+.status.err { color: var(--warn); }
+details { font-size: 14px; color: var(--muted); }
+summary { cursor: pointer; color: var(--ink); font-weight: 500; }
+details ul { margin: 8px 0 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.sample { font-size: 12px; color: var(--warn); border: 1px solid currentColor; border-radius: 999px; padding: 0 8px; }
+.foot { color: var(--muted); font-size: 13px; margin: 0; max-width: 80ch; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.lang { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.lang button { border: none; border-radius: 0; padding: 4px 12px; font-size: 13px; background: var(--panel); color: var(--muted); }
+.lang button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<main class="wrap">
+  <div class="top">
+    <header>
+      <p class="eyebrow" data-t="eyebrow"></p>
+      <h1 data-t="title"></h1>
+      <p class="lede" data-t="lede"></p>
+    </header>
+    <div class="lang" role="group" aria-label="Language / 语言">
+      <button type="button" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" data-lang="zh" aria-pressed="false">简体中文</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <section class="panel">
+        <h2><span class="n">1</span><span data-t="s1"></span></h2>
+        <div class="row" id="sampleRow"><span class="sample" data-t="sampleTag"></span><span class="note" data-t="sampleNote"></span></div>
+        <textarea id="event" data-t-aria="s1"></textarea>
+        <p class="note" data-t="s1note"></p>
+      </section>
+
+      <section class="panel">
+        <h2><span class="n">2</span><span data-t="s2"></span></h2>
+        <p class="note" data-t="s2note"></p>
+        <div class="chips" id="lenses"></div>
+      </section>
+
+      <section class="panel">
+        <h2><span class="n">3</span><span data-t="s3"></span></h2>
+        <div class="steps" id="steps"></div>
+      </section>
+
+      <section class="panel">
+        <h2><span class="n">4</span><span data-t="s4"></span><span class="note" data-t="optional"></span></h2>
+        <p class="note" data-t="s4note"></p>
+        <textarea id="values" data-t-ph="s4ph"></textarea>
+        <div class="row">
+          <div class="field"><label for="depth" data-t="depth"></label>
+            <select id="depth"><option value="brief" data-t="brief"></option><option value="full" data-t="full"></option></select></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel">
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" id="tab-prompt" aria-selected="true" aria-controls="pane-prompt" data-t="tabPrompt"></button>
+          <button type="button" role="tab" id="tab-api" aria-selected="false" aria-controls="pane-api" data-t="tabApi"></button>
+        </div>
+
+        <div id="pane-prompt" role="tabpanel" aria-labelledby="tab-prompt" class="col">
+          <p class="note" data-t="promptNote"></p>
+          <textarea id="prompt" class="out" readonly data-t-aria="tabPrompt"></textarea>
+          <div class="row"><button type="button" class="primary" id="copy" data-t="copy"></button><span class="status" id="copyStatus"></span></div>
+        </div>
+
+        <div id="pane-api" role="tabpanel" aria-labelledby="tab-api" class="col" hidden>
+          <p class="note" data-t="apiNote"></p>
+          <div class="row">
+            <div class="field"><label for="kind" data-t="kind"></label>
+              <select id="kind"><option value="openai" data-t="kindOpenai"></option><option value="anthropic">Anthropic</option></select></div>
+          </div>
+          <div class="field"><label for="base" data-t="base"></label><input type="text" id="base" autocomplete="off"></div>
+          <div class="row">
+            <div class="field"><label for="model" data-t="model"></label><input type="text" id="model" data-t-ph="modelPh" autocomplete="off"></div>
+            <div class="field"><label for="key" data-t="key"></label><input type="password" id="key" data-t-ph="keyPh" autocomplete="off"></div>
+          </div>
+          <div class="row"><button type="button" class="primary" id="send" data-t="send"></button><span class="status" id="apiStatus"></span></div>
+          <div class="answer" id="answer" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2><span class="n">5</span><span data-t="s5"></span></h2>
+        <p class="note" data-t="s5note"></p>
+        <textarea id="mine" data-t-ph="s5ph"></textarea>
+      </section>
+
+      <details>
+        <summary data-t="assumeTitle"></summary>
+        <ul id="assume"></ul>
+      </details>
+    </div>
+  </div>
+
+  <p class="foot"><span data-t="foot"></span><br><span data-t="credit"></span></p>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const store = { get(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+
+  const T = {
+    en: {
+      eyebrow: 'Open-source project · v0.1.0',
+      title: 'Perspective Map',
+      lede: 'When something happens, lay out all its sides before you ask an AI. This page gives no answers. It helps you see what else is involved and what else to ask.',
+      s1: 'What happened', sampleTag: 'Example', sampleNote: 'This is an example. Replace it with your own situation.',
+      s1note: 'Write down the facts as best you can. You can include your feelings and worries too. Please leave out other people\'s private details, such as real names, phone numbers or ID numbers.',
+      sample: 'A friend asked to borrow a fairly large sum of money and promised to pay it back next month. He still hasn\'t repaid what he borrowed last time. I\'m not sure whether to lend it, and I\'m worried that saying no will hurt our friendship.',
+      s2: 'Which fields to look from', s2note: 'If you choose none, the AI will pick the two or three most relevant fields.',
+      s3: 'Which aspects to analyze',
+      s4: 'Your own values', optional: ' (optional)',
+      s4note: 'If you already have principles of your own, write them here. The AI will analyze against them but will still present other views.',
+      s4ph: 'For example: avoid harm that can\'t be undone; help others when I can, and take care of myself too.',
+      depth: 'Level of detail', brief: 'Brief', full: 'Detailed',
+      tabPrompt: 'Copy prompt', tabApi: 'Ask an AI directly',
+      promptNote: 'No account or key needed. Copy the prompt below into any AI chat to get an analysis organized by this framework.',
+      copy: 'Copy prompt', copied: 'Copied', selected: 'Selected. Please copy it manually.',
+      apiNote: 'Use your own API. Your key stays in this page only, is cleared when you reload, and is sent only to the address you enter. External services can\'t be reached from the preview inside Claude; download the file and open it locally.',
+      kind: 'API type', kindOpenai: 'OpenAI-compatible (most providers, local Ollama)',
+      base: 'Service address', model: 'Model name', modelPh: 'The model name from your provider', key: 'API key', keyPh: 'Can be left empty for local models',
+      send: 'Send', needModel: 'Please enter a model name first.', waiting: 'Waiting for the answer…', done: 'Done. When you have read it, write down your own view below.', empty: '(No content received)',
+      failed: 'Connection failed: ', unknown: 'unknown error',
+      failHelp: '. Possible reasons: external services can\'t be reached from the preview inside Claude (download the file and open it locally); the provider doesn\'t allow calls from a browser; a local model needs cross-origin access enabled; or the address, key or model name is wrong. You can still use “Copy prompt”.',
+      s5: 'After reading: what do you think?', s5note: 'The AI\'s analysis is only a mirror. Write down your own judgment, especially where you disagree with it. This is saved only in this device\'s browser.',
+      s5ph: 'My judgment is… Where I disagree is…',
+      assumeTitle: 'What this framework assumes',
+      assume: [
+        'It does not decide for you. It helps you see more sides.',
+        'It assumes causes come in layers: personal, relational, institutional and structural.',
+        'It poses value questions as questions and lists several ethical perspectives, without choosing a position for you.',
+        'It asks for at least two views within each field, each stated fairly.',
+        'It asks the AI to say where it is unsure, and to suggest professional help for health, legal, financial and safety matters.',
+        'Every framework involves trade-offs. If these assumptions don\'t suit you, edit the prompt directly.'
+      ],
+      foot: 'v0.1.0. AI can be wrong or make things up; check sources before important decisions. In an emergency involving personal safety, health, law or money, contact the relevant professionals or emergency services directly.',
+      credit: 'Made by Fantasia Skadi Candy, with Claude · Open source under the MIT License',
+      lenses: [
+        ['Psychology', 'feelings, motives, cognitive biases'], ['Relationships', 'trust, boundaries, communication'],
+        ['Sociology', 'groups, norms, social structures'], ['Economics', 'incentives, costs, allocation of resources'],
+        ['Law', 'rights, duties, rules and risks'], ['Politics & public policy', 'power, institutions, public interest'],
+        ['History', 'precedents and long-term trends'], ['Ethics', 'different standards of right and wrong'],
+        ['Health & medicine', 'physical and mental health'], ['Education & growth', 'learning and personal development'],
+        ['Media & communication', 'how information is presented and spread'], ['Evolution & biology', 'instincts and evolutionary background']
+      ],
+      steps: {
+        facts: ['Facts and missing information', 'Separate known facts, guesses and feelings; list what is most needed before judging.'],
+        people: ['People involved', 'Who is involved, and their likely positions and interests.'],
+        causes: ['Layers of causes', 'Causes at the personal, relational, and institutional or structural level.'],
+        lenses: ['Field perspectives', 'What each chosen field looks at; at least two views within each field, stated fairly.'],
+        values: ['Value questions', 'The value questions involved, posed as questions, and how several ethical perspectives would see them.'],
+        options: ['Options and their costs', 'Possible actions, their costs and risks, and whether they can be undone.'],
+        limits: ['Uncertainty and limits', 'Where the analysis may be wrong; when to seek professional help.'],
+        questions: ['Questions for you', 'Two or three questions to check against your own intuition.']
+      },
+      P: {
+        intro: 'You are an assistant who helps the user think through a situation from every relevant side. Your task is not to make the decision for the user, but to help them see more of the aspects involved and know what else to ask.',
+        structure: 'Answer using the structure below, with a heading for each part:',
+        facts: 'Facts and missing information: separate the known facts in the user\'s account from guesses and feelings; list the information most needed before making a judgment.',
+        people: 'People involved: who are the people or groups involved? What are their likely positions, interests and feelings?',
+        causes: 'Layers of causes: describe possible causes at the personal level, the level of relationships, and the institutional or structural level.',
+        lenses: 'Field perspectives: for each specified field, explain what it would pay attention to and what questions it would ask. Where a field contains different schools or views, present at least two, stating each in a way its own supporters would accept.',
+        values: 'Value questions: list the value questions this situation raises, posed as questions. For example: are there consequences that cannot be undone? Who bears the cost? Is anyone being used merely as a means to an end? Is everyone\'s freedom to choose respected? Then briefly explain how several ethical perspectives (focused on consequences, on rules and rights, on character, or on care and relationships) would see it. Do not choose a value position for the user.',
+        options: 'Options and their costs: list several workable courses of action, with the cost and risk of each, and whether it can be undone or corrected.',
+        limits: 'Uncertainty and limits: point out where you are unsure or might be wrong. If the situation involves health, law, money, personal safety or a mental health crisis, clearly advise the user to consult a qualified professional or seek help promptly.',
+        questions: 'Questions for the user: end with two or three questions that invite the user to check the analysis against their own intuition and values.',
+        lensesSet: l => `Specified fields: ${l.join(', ')}.`,
+        lensesNone: 'The user did not specify any fields. Choose the two or three fields most relevant to this situation and explain why you chose them.',
+        valuesSet: v => `The user has provided their own value principles. In the "Value questions" part, analyze the situation against these principles while still presenting other views; do not simply agree with them:\n"${v}"`,
+        req: full => 'Requirements: answer in the language the user writes in, using plain words; ' + (full ? 'you may explain each part in some depth; ' : 'keep each part to the most important points; ') + 'do not invent specific figures, legal provisions or sources, and say so when you are unsure; state views you disagree with fairly as well.',
+        account: 'The user\'s account:', blank: '(not filled in yet)'
+      }
+    },
+    zh: {
+      eyebrow: '开源项目 · v0.1.0',
+      title: '视角地图',
+      lede: '遇到一件事时，先把它的各个方面摊开，再去问AI。这个页面不提供答案，只帮你看到还有哪些方面、还应该问什么。',
+      s1: '发生了什么', sampleTag: '示例', sampleNote: '这是一个示例，换成你自己的事情即可。',
+      s1note: '尽量写下事实，也可以写下你的感受和担心。不要写入他人的隐私信息，比如真实姓名、电话或证件号。',
+      sample: '一位朋友向我借一笔不小的钱，说下个月就还。可他上次借的钱到现在还没还，我不知道该不该借，也担心拒绝会伤害我们的关系。',
+      s2: '想从哪些领域看', s2note: '不选的话，由AI挑选最相关的两到三个领域。',
+      s3: '分析哪些方面',
+      s4: '你自己的价值观', optional: '（可选）',
+      s4note: '如果你已经有一套自己的原则，可以写在这里。AI会对照它来分析，但仍会呈现其他观点。',
+      s4ph: '例如：尽量不做撤不回的伤害；在能力范围内帮助别人，也照顾好自己。',
+      depth: '详细程度', brief: '简要', full: '详细',
+      tabPrompt: '复制提示词', tabApi: '直接调用AI',
+      promptNote: '不需要任何账号或密钥。把下面的提示词复制到任何AI对话里，就能得到按这套框架整理的分析。',
+      copy: '复制提示词', copied: '已复制', selected: '已选中，请手动复制',
+      apiNote: '使用你自己的API。密钥只保存在当前页面里，刷新即清除，只会发送给你填写的服务地址。在Claude的页面预览中无法连接外部服务，请下载文件后在本地打开。',
+      kind: '接口类型', kindOpenai: 'OpenAI 兼容（多数服务商、本地 Ollama）',
+      base: '服务地址', model: '模型名称', modelPh: '填写服务商提供的模型名称', key: 'API 密钥', keyPh: '本地模型可留空',
+      send: '发送', needModel: '请先填写模型名称。', waiting: '正在等待回答……', done: '已完成。读完后，在下方写下你自己的看法。', empty: '（没有收到内容）',
+      failed: '连接失败：', unknown: '未知错误',
+      failHelp: '。可能的原因：在Claude的页面预览中无法连接外部服务（请下载文件后在本地打开）；服务商不允许浏览器直接调用；本地模型需要允许跨域；地址、密钥或模型名称有误。你仍然可以使用“复制提示词”。',
+      s5: '读完以后，你怎么看', s5note: 'AI的分析只是一面镜子。写下你自己的判断，尤其是你不同意它的地方。内容只保存在这台设备的浏览器里。',
+      s5ph: '我的判断是……我不同意的地方是……',
+      assumeTitle: '这套框架的预设（透明说明）',
+      assume: [
+        '它不替你做决定，只帮你看到更多方面。',
+        '它预设原因有多个层次：个人、人际关系、制度与结构。',
+        '它把价值问题写成问题，并列出几种伦理视角，而不替你选择立场。',
+        '它要求对每个领域内的不同观点，至少公平地陈述两种。',
+        '它要求AI说明自己不确定的地方，并在涉及健康、法律、财务、安全时建议寻求专业帮助。',
+        '任何框架都有取舍。如果你认为这些预设不合适，可以直接修改提示词。'
+      ],
+      foot: 'v0.1.0。AI可能出错或编造信息，重要的判断请核实来源；涉及人身安全、健康、法律或财务的紧急情况，请直接联系相关专业人员或急救、报警电话。',
+      credit: '由 Fantasia Skadi Candy 与 Claude 共同制作 · 以 MIT 许可证开源',
+      lenses: [
+        ['心理学', '感受、动机、认知偏差'], ['人际关系', '信任、边界、沟通'],
+        ['社会学', '群体、规范、社会结构'], ['经济学', '激励、成本、资源分配'],
+        ['法律', '权利、义务、规则与风险'], ['政治与公共政策', '权力、制度、公共利益'],
+        ['历史', '先例与长期趋势'], ['伦理学', '对与错的不同标准'],
+        ['健康与医学', '身体与心理健康'], ['教育与成长', '学习与个人发展'],
+        ['传播与媒体', '信息如何被呈现和传播'], ['演化与生物学', '本能与演化背景']
+      ],
+      steps: {
+        facts: ['事实与信息缺口', '区分已知事实、推测与情绪；列出做判断前最需要补充的信息。'],
+        people: ['相关的人', '牵涉哪些人或群体，各自可能的立场与利益。'],
+        causes: ['原因的层次', '个人、人际关系、制度与结构三个层面的原因。'],
+        lenses: ['领域视角', '所选领域会关注什么；每个领域内至少两种不同观点，并公平陈述。'],
+        values: ['价值考量', '以问题形式列出涉及的价值问题，并说明几种伦理视角会如何看。'],
+        options: ['可选的行动与代价', '几种做法各自的代价、风险，以及能否撤回。'],
+        limits: ['不确定与边界', '哪里可能出错；何时应当寻求专业帮助。'],
+        questions: ['留给你的问题', '两到三个问题，请你对照自己的直觉思考。']
+      },
+      P: {
+        intro: '你是一个帮助用户全面思考一件事的助手。你的任务不是替用户做决定，而是帮助用户看到这件事更多相关的方面，知道还应该问什么。',
+        structure: '请按以下结构回答，每一部分使用小标题：',
+        facts: '事实与信息缺口：区分用户描述中的已知事实、推测和情绪；列出在做出判断前最需要补充的信息。',
+        people: '相关的人：这件事牵涉哪些人或群体？他们各自可能的立场、利益和感受是什么？',
+        causes: '原因的层次：分别从个人层面、人际关系层面、制度或结构层面，说明可能的原因。',
+        lenses: '领域视角：从指定的领域出发，说明每个领域会关注什么、会提出什么问题。若某个领域内存在不同的学派或观点，至少列出两种，并以其支持者会认可的方式公平地陈述。',
+        values: '价值考量：以问题的形式列出这件事涉及的价值问题，例如：有没有撤不回的后果？代价由谁承担？有没有人被当作达成目的的手段？各方的选择权是否被尊重？再简要说明几种伦理视角（重视后果、重视规则与权利、重视品格、重视关怀与关系）会如何看待。不要替用户选择价值立场。',
+        options: '可选的行动与代价：列出几种可行的做法，说明每种做法的代价、风险，以及是否可以撤回或修正。',
+        limits: '不确定与边界：指出你不确定或可能出错的地方。如果涉及健康、法律、财务、人身安全或心理危机，明确建议用户咨询相关专业人士或及时求助。',
+        questions: '留给用户的问题：最后提出两到三个问题，请用户对照自己的直觉和价值观思考。',
+        lensesSet: l => `指定的领域：${l.join('、')}。`,
+        lensesNone: '用户没有指定领域，请你挑选与这件事最相关的两到三个领域，并说明为什么选它们。',
+        valuesSet: v => `用户提供了自己的价值原则，请在“价值考量”中对照这些原则分析，同时仍然呈现其他观点，不要只顺着用户的原则说：\n「${v}」`,
+        req: full => '要求：使用用户所用的语言和平实的表达；' + (full ? '每部分可以展开说明；' : '每部分只写最重要的要点，保持简短；') + '不要编造具体的数据、法律条文或文献，不确定时请说明；对你不赞同的观点，也要公平地陈述。',
+        account: '用户描述的事情：', blank: '（用户尚未填写）'
+      }
+    }
+  };
+  const STEP_KEYS = ['facts', 'people', 'causes', 'lenses', 'values', 'options', 'limits', 'questions'];
+
+  let lang = (location.hash === '#zh' || store.get('pm-lang') === 'zh') && location.hash !== '#en' ? 'zh' : 'en';
+  const lensChecked = new Set(), stepOff = new Set();
+
+  function renderControls() {
+    const L = T[lang];
+    $('lenses').replaceChildren(...L.lenses.map(([name, hint], i) => {
+      const lab = document.createElement('label'); lab.className = 'chip'; lab.title = hint;
+      const inp = document.createElement('input'); inp.type = 'checkbox'; inp.id = 'lens-' + i; inp.checked = lensChecked.has(i);
+      inp.addEventListener('change', () => { inp.checked ? lensChecked.add(i) : lensChecked.delete(i); refresh(); });
+      const sp = document.createElement('span'); sp.textContent = name;
+      lab.append(inp, sp); return lab;
+    }));
+    $('steps').replaceChildren(...STEP_KEYS.map(k => {
+      const [name, hint] = L.steps[k];
+      const lab = document.createElement('label'); lab.className = 'step';
+      const inp = document.createElement('input'); inp.type = 'checkbox'; inp.id = 'step-' + k; inp.checked = !stepOff.has(k);
+      inp.addEventListener('change', () => { inp.checked ? stepOff.delete(k) : stepOff.add(k); refresh(); });
+      const sp = document.createElement('span'); sp.textContent = name;
+      const sm = document.createElement('small'); sm.textContent = hint; sp.append(sm);
+      lab.append(inp, sp); return lab;
+    }));
+    $('assume').replaceChildren(...L.assume.map(t => { const li = document.createElement('li'); li.textContent = t; return li; }));
+  }
+
+  function applyLang(next) {
+    const prevSample = T[lang].sample;
+    lang = next; store.set('pm-lang', lang);
+    const L = T[lang];
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    document.title = L.title;
+    document.querySelectorAll('[data-t]').forEach(n => { n.textContent = L[n.dataset.t]; });
+    document.querySelectorAll('[data-t-ph]').forEach(n => { n.placeholder = L[n.dataset.tPh]; });
+    document.querySelectorAll('[data-t-aria]').forEach(n => { n.setAttribute('aria-label', L[n.dataset.tAria]); });
+    document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+    const ev = $('event');
+    if (!ev.value.trim() || ev.value.trim() === prevSample) ev.value = L.sample;
+    $('copyStatus').textContent = ''; $('apiStatus').textContent = '';
+    renderControls(); refresh();
+  }
+
+  function buildPrompt() {
+    const L = T[lang], P = L.P;
+    const event = $('event').value.trim();
+    const lenses = [...lensChecked].sort((a, b) => a - b).map(i => L.lenses[i][0]);
+    const steps = STEP_KEYS.filter(k => !stepOff.has(k));
+    const values = $('values').value.trim();
+    const parts = [P.intro, P.structure];
+    steps.forEach((k, i) => parts.push(`${i + 1}. ${P[k]}`));
+    if (steps.includes('lenses')) parts.push(lenses.length ? P.lensesSet(lenses) : P.lensesNone);
+    if (values) parts.push(P.valuesSet(values));
+    parts.push(P.req($('depth').value === 'full'));
+    parts.push('——', P.account, event || P.blank);
+    return parts.join('\n');
+  }
+
+  function refresh() {
+    $('prompt').value = buildPrompt();
+    $('sampleRow').hidden = $('event').value.trim() !== T[lang].sample;
+  }
+
+  $('event').addEventListener('input', refresh);
+  $('values').addEventListener('input', refresh);
+  $('depth').addEventListener('change', refresh);
+  document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => { if (b.dataset.lang !== lang) applyLang(b.dataset.lang); }));
+
+  $('mine').value = store.get('pm-mine');
+  $('mine').addEventListener('input', e => store.set('pm-mine', e.target.value));
+
+  $('copy').addEventListener('click', () => {
+    const t = $('prompt').value, s = $('copyStatus'), L = T[lang];
+    try { navigator.clipboard.writeText(t).then(() => { s.textContent = L.copied; }, () => { $('prompt').select(); s.textContent = L.selected; }); }
+    catch (e) { $('prompt').select(); s.textContent = L.selected; }
+  });
+
+  const tabs = [['tab-prompt', 'pane-prompt'], ['tab-api', 'pane-api']];
+  tabs.forEach(([t]) => $(t).addEventListener('click', () => tabs.forEach(([t2, p2]) => { const on = t2 === t; $(t2).setAttribute('aria-selected', String(on)); $(p2).hidden = !on; })));
+
+  const DEFAULT_BASE = { openai: 'https://api.openai.com/v1', anthropic: 'https://api.anthropic.com' };
+  $('base').value = DEFAULT_BASE.openai;
+  $('kind').addEventListener('change', () => { $('base').value = DEFAULT_BASE[$('kind').value]; });
+
+  async function callModel(kind, base, key, model, prompt) {
+    base = base.replace(/\/+$/, '');
+    if (kind === 'anthropic') {
+      const r = await fetch(base + '/v1/messages', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify({ model, max_tokens: 3000, messages: [{ role: 'user', content: prompt }] }) });
+      const d = await r.json(); if (!r.ok) throw new Error(d?.error?.message || ('HTTP ' + r.status));
+      return (d.content || []).map(c => c.text || '').join('');
+    }
+    const headers = { 'content-type': 'application/json' }; if (key) headers.authorization = 'Bearer ' + key;
+    const r = await fetch(base + '/chat/completions', { method: 'POST', headers, body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }] }) });
+    const d = await r.json(); if (!r.ok) throw new Error(d?.error?.message || ('HTTP ' + r.status));
+    return d?.choices?.[0]?.message?.content || '';
+  }
+
+  $('send').addEventListener('click', async () => {
+    const s = $('apiStatus'), out = $('answer'), L = T[lang];
+    const model = $('model').value.trim();
+    if (!model) { s.className = 'status err'; s.textContent = L.needModel; return; }
+    s.className = 'status'; s.textContent = L.waiting; out.textContent = '';
+    try {
+      const text = await callModel($('kind').value, $('base').value.trim(), $('key').value.trim(), model, buildPrompt());
+      out.textContent = text || L.empty; s.textContent = L.done;
+    } catch (e) {
+      s.className = 'status err';
+      s.textContent = L.failed + (e && e.message ? e.message : L.unknown) + L.failHelp;
+    }
+  });
+
+  applyLang(lang);
+})();
+</script>
+
+</body>
+</html>
