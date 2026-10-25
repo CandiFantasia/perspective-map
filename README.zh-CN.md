@@ -35,11 +35,11 @@
 
 ### 方式一：在线使用
 
-打开项目的网页地址（启用 GitHub Pages 后为 `https://candifantasia.github.io/perspective-map/`），无需安装。
+打开项目的网页地址 https://candifantasia.github.io/perspective-map/ ，无需安装。
 
 ### 方式二：本地使用
 
-下载 `perspective-map v0.1.0.html`，用浏览器直接打开即可。
+下载 perspective-map v0.1.0.html(https://github.com/CandiFantasia/perspective-map/releases/tag/perspective-map.v0.1.0) ，用浏览器直接打开即可。
 
 ### 切换语言
 
