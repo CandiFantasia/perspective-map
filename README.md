@@ -39,7 +39,7 @@ Open the project's web address https://candifantasia.github.io/perspective-map/.
 
 ### Option 2: locally
 
-Download perspective-map v0.1.0.html and open it in a browser.
+Download perspective-map v0.1.0.html(https://github.com/CandiFantasia/perspective-map/releases/tag/perspective-map.v0.1.0) and open it in a browser.
 
 ### Language
 
